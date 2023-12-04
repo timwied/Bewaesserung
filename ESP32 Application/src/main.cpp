@@ -4,14 +4,21 @@
 #include <ESPAsyncWebServer.h>
 #include <WiFi.h>
 
-void setup() {
-  Serial.begin(9600);
+int PinMoisture = 34;
+int PinWater = 35;
+int PinRelay = 5;
 
+bool ActivatePump = false;
+bool NoWater = false;
+
+void startServer()
+{
   // begin WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin("RvWBK-BYOD", "IchGeheGerneZurSchule");
 
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+  if (WiFi.waitForConnectResult() != WL_CONNECTED)
+  {
     Serial.printf("WiFi Failed!\n");
     return;
   }
@@ -23,19 +30,21 @@ void setup() {
   AsyncWebServer *server = new AsyncWebServer(80);
 
   // definieren von handler von get requests
-  server->on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", "<h1>CustomTest</h1>");
-  });
+  server->on("/data", HTTP_GET, [](AsyncWebServerRequest *request)
+             { request->send(200, "text/html", "<h1>CustomTest</h1>"); });
 
   server->on(
       "/data", HTTP_POST,
-      [](AsyncWebServerRequest *request) {
+      [](AsyncWebServerRequest *request)
+      {
         request->send(400, "text/html", "<h1>Body missing</h1>");
       },
       NULL,
       [](AsyncWebServerRequest *request, uint8_t *data, size_t len,
-         size_t index, size_t total) {
-        if (len != total) {
+         size_t index, size_t total)
+      {
+        if (len != total)
+        {
           request->send(400, "text/html", "<h1>Paginagion kickt</h1>");
           return;
         }
@@ -45,7 +54,8 @@ void setup() {
 
   // Json post handler
   AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler(
-      "/data2", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      "/data2", [](AsyncWebServerRequest *request, JsonVariant &json)
+      {
         if (json["username"].is<String>()) {
           String x = json["username"];
           request->send(200, "text/html", "du heißt " + x);
@@ -62,12 +72,64 @@ void setup() {
           String x;
           serializeJson(doc, x);
           request->send(400, "application/json", x);
-        }
-      });
+        } });
 
   server->addHandler(handler);
   server->begin();
 }
 
-void loop() {
+void setPins()
+{
+  pinMode(PinMoisture, INPUT);
+  pinMode(PinWater, INPUT);
+  pinMode(PinRelay, OUTPUT);
+}
+
+void pumpWater(int milliSeconds)
+{
+  Serial.printf("Pumping water for %d milliseconds\n", milliSeconds);
+  digitalWrite(PinRelay, HIGH);
+  delay(milliSeconds);
+  digitalWrite(PinRelay, LOW);
+}
+
+void readWaterLevel()
+{
+  Serial.print("Entering readWaterLevel()\n");
+  int waterLevel = analogRead(PinWater);
+  Serial.printf("Waterlevel reading: %d\n", waterLevel);
+  if (waterLevel < 200)
+    NoWater = true;
+  else
+    NoWater = false;
+  Serial.printf("NoWater=%s\n", NoWater ? "True" : "False");
+}
+
+void readMoisture()
+{
+  Serial.print("Entering readMoisture()\n");
+  int moistureLevel = analogRead(PinMoisture);
+  Serial.printf("Moisture reading: %d\n", moistureLevel);
+  if (moistureLevel > 2000)
+    pumpWater(5000);
+}
+
+//--------------------------------------------------------------------
+//--------------------------------------------------------------------
+
+void setup()
+{
+  Serial.begin(9600);
+
+  setPins();
+
+  startServer();
+}
+
+void loop()
+{
+  readWaterLevel();
+  readMoisture();
+  // userInput()
+  delay(2000);
 }
