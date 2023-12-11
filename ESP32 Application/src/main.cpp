@@ -3,6 +3,7 @@
 #include <AsyncJson.h>
 #include <ESPAsyncWebServer.h>
 #include <WiFi.h>
+#include <SPIFFS.h>
 
 int PinMoisture = 34;
 int PinWater = 35;
@@ -10,6 +11,21 @@ int PinRelay = 5;
 
 bool ActivatePump = false;
 bool NoWater = false;
+
+int Moisture = 0;
+int WaterLevel = 0;
+
+void HandleRoot(AsyncWebServerRequest* request)
+{
+  Serial.printf("Entering HandleRoot\n");
+  request->send(SPIFFS, "/index.html");
+}
+
+void HandleGetData(AsyncWebServerRequest* request)
+{
+  String json = String("{\"waterLevel\":") + WaterLevel + String(",\"humidity\":") + Moisture + String("}");
+  request->send(200, "application/json", json);
+}
 
 void startServer()
 {
@@ -30,8 +46,8 @@ void startServer()
   AsyncWebServer *server = new AsyncWebServer(80);
 
   // definieren von handler von get requests
-  server->on("/data", HTTP_GET, [](AsyncWebServerRequest *request)
-             { request->send(200, "text/html", "<h1>CustomTest</h1>"); });
+  server->on("/", HTTP_GET, HandleRoot);
+  server->on("/getData", HTTP_GET, HandleGetData);
 
   server->on(
       "/data", HTTP_POST,
@@ -96,9 +112,9 @@ void pumpWater(int milliSeconds)
 void readWaterLevel()
 {
   Serial.print("Entering readWaterLevel()\n");
-  int waterLevel = analogRead(PinWater);
-  Serial.printf("Waterlevel reading: %d\n", waterLevel);
-  if (waterLevel < 200)
+  WaterLevel = analogRead(PinWater);
+  Serial.printf("Waterlevel reading: %d\n", WaterLevel);
+  if (WaterLevel < 200)
     NoWater = true;
   else
     NoWater = false;
@@ -108,9 +124,9 @@ void readWaterLevel()
 void readMoisture()
 {
   Serial.print("Entering readMoisture()\n");
-  int moistureLevel = analogRead(PinMoisture);
-  Serial.printf("Moisture reading: %d\n", moistureLevel);
-  if (moistureLevel > 2000)
+  Moisture = analogRead(PinMoisture);
+  Serial.printf("Moisture reading: %d\n", Moisture);
+  if (Moisture > 2000)
     pumpWater(5000);
 }
 
@@ -123,6 +139,7 @@ void setup()
 
   setPins();
 
+  SPIFFS.begin();
   startServer();
 }
 
