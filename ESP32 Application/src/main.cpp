@@ -126,8 +126,8 @@ void readMoisture()
   Serial.print("Entering readMoisture()\n");
   Moisture = analogRead(PinMoisture);
   Serial.printf("Moisture reading: %d\n", Moisture);
-  if (Moisture > 2000)
-    pumpWater(5000);
+  if (Moisture < 2000)
+    pumpWater(1000);
 }
 
 //--------------------------------------------------------------------

@@ -48,35 +48,35 @@
         <div class="sensor">
             <div>
                 <label for="waterLevel">Wasserstand:</label>
-                <span id="waterLevel">50%</span>
+                <span id="waterLevel">0</span>
             </div>
 
             <div>
                 <label for="humidity">Feuchtigkeitsstand:</label>
-                <span id="humidity">60%</span>
+                <span id="humidity">0</span>
             </div>
         </div>
 
         <div class="btn-container">
-            <button onclick="addWater()">Wasser hinzufügen (10 ml)</button>
+            <button onclick="addWater()">Wasser hinzufügen</button>
         </div>
     </div>
 
     <script>
-        // Beispiel-JavaScript für das Hinzufügen von Wasser
+        async function loadData() {
+            const response = await fetch('http://10.12.117.254/getData');
+            const data = await response.json();
+
+            document.getElementById('waterLevel').innerText = data['waterLevel'];
+            document.getElementById('humidity').innerText = data['humidity'];
+        }
+
+        window.addEventListener('load', function () {
+            setInterval(loadData, 100);
+        })
+
         function addWater() {
-            // Hier würdest du normalerweise eine Anfrage an den Server senden, um die Daten zu aktualisieren.
-            // Für diese statische Vorlage ändern wir einfach die Anzeige.
             
-            // Annahme: Wasserstand und Feuchtigkeitsstand in Prozent
-            let currentWaterLevel = parseInt(document.getElementById('waterLevel').innerText);
-            let currentHumidity = parseInt(document.getElementById('humidity').innerText);
-
-            // Wasser hinzufügen (10 ml)
-            currentWaterLevel = Math.min(100, currentWaterLevel + 10);
-
-            // Aktualisiere die Anzeige
-            document.getElementById('waterLevel').innerText = currentWaterLevel + '%';
         }
     </script>
 </body>
