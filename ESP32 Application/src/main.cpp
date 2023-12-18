@@ -10,6 +10,9 @@ int PinWater = 35;
 int PinRelay = 5;
 
 bool ActivatePump = false;
+bool PumpTime = 1000;
+int PumpStartTime = 0;
+int PumpBreakTime = 5000;
 bool NoWater = false;
 
 int Moisture = 0;
@@ -23,7 +26,11 @@ void HandleRoot(AsyncWebServerRequest* request)
 
 void HandleGetData(AsyncWebServerRequest* request)
 {
-  String json = String("{\"waterLevel\":") + WaterLevel + String(",\"humidity\":") + Moisture + String("}");
+  String json = String("{\"waterLevel\":") + WaterLevel +
+                String(",\"humidity\":") + Moisture +
+                String(",\"pumpStartTime\":") + PumpStartTime +
+                String(",\"activatePump\":") + ActivatePump +
+                String("}");
   request->send(200, "application/json", json);
 }
 
@@ -101,12 +108,15 @@ void setPins()
   pinMode(PinRelay, OUTPUT);
 }
 
-void pumpWater(int milliSeconds)
+void pumpWater()
 {
-  Serial.printf("Pumping water for %d milliseconds\n", milliSeconds);
-  digitalWrite(PinRelay, HIGH);
-  delay(milliSeconds);
-  digitalWrite(PinRelay, LOW);
+  if(ActivatePump){
+    digitalWrite(PinRelay, HIGH);
+    if(millis() - PumpStartTime > PumpTime)
+      ActivatePump = false;
+  }
+  else
+    digitalWrite(PinRelay, LOW);
 }
 
 void readWaterLevel()
@@ -126,8 +136,10 @@ void readMoisture()
   Serial.print("Entering readMoisture()\n");
   Moisture = analogRead(PinMoisture);
   Serial.printf("Moisture reading: %d\n", Moisture);
-  if (Moisture < 2000)
-    pumpWater(1000);
+  if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime){
+    ActivatePump = true;
+    PumpStartTime = millis();
+  }
 }
 
 //--------------------------------------------------------------------
@@ -147,6 +159,7 @@ void loop()
 {
   readWaterLevel();
   readMoisture();
+  pumpWater();
   // userInput()
-  delay(2000);
+  //delay(2000);
 }
