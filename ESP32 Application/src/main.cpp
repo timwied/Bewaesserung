@@ -10,9 +10,9 @@ int PinWater = 35;
 int PinRelay = 5;
 
 bool ActivatePump = false;
-bool PumpTime = 1000;
+int PumpTime = 5000;
 int PumpStartTime = 0;
-int PumpBreakTime = 5000;
+int PumpBreakTime = 10000;
 bool NoWater = false;
 
 int Moisture = 0;
@@ -30,6 +30,7 @@ void HandleGetData(AsyncWebServerRequest* request)
                 String(",\"humidity\":") + Moisture +
                 String(",\"pumpStartTime\":") + PumpStartTime +
                 String(",\"activatePump\":") + ActivatePump +
+                String(",\"millis\":") + millis() +
                 String("}");
   request->send(200, "application/json", json);
 }
@@ -111,9 +112,12 @@ void setPins()
 void pumpWater()
 {
   if(ActivatePump){
+    Serial.printf("%d, %d, %d\n", millis(), PumpStartTime, Moisture);
     digitalWrite(PinRelay, HIGH);
     if(millis() - PumpStartTime > PumpTime)
+    {
       ActivatePump = false;
+    }
   }
   else
     digitalWrite(PinRelay, LOW);
@@ -121,25 +125,20 @@ void pumpWater()
 
 void readWaterLevel()
 {
-  Serial.print("Entering readWaterLevel()\n");
   WaterLevel = analogRead(PinWater);
-  Serial.printf("Waterlevel reading: %d\n", WaterLevel);
   if (WaterLevel < 200)
     NoWater = true;
   else
     NoWater = false;
-  Serial.printf("NoWater=%s\n", NoWater ? "True" : "False");
 }
 
 void readMoisture()
 {
-  Serial.print("Entering readMoisture()\n");
   Moisture = analogRead(PinMoisture);
-  Serial.printf("Moisture reading: %d\n", Moisture);
-  if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime){
-    ActivatePump = true;
-    PumpStartTime = millis();
-  }
+  // if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime){
+  //   ActivatePump = true;
+  //   PumpStartTime = millis();
+  // }
 }
 
 //--------------------------------------------------------------------
@@ -159,7 +158,20 @@ void loop()
 {
   readWaterLevel();
   readMoisture();
-  pumpWater();
+  //pumpWater();
+
+  if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime)
+  {
+    PumpStartTime = millis();
+    digitalWrite(PinRelay, HIGH);
+    ActivatePump = true;
+  }
+  else if (millis() - PumpStartTime > PumpTime)
+  {
+    digitalWrite(PinRelay, LOW);
+    ActivatePump = false;
+  }
+
   // userInput()
   //delay(2000);
 }
