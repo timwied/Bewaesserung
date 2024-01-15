@@ -88,10 +88,13 @@ void loop()
   readWaterLevel();
   Moisture = analogRead(PinMoisture);
 
-  if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime)
+  if (Moisture < 2000)
   {
-    PumpStartTime = millis();
-    digitalWrite(PinRelay, HIGH);
+    if (millis() - PumpStartTime > PumpBreakTime)
+    {
+      PumpStartTime = millis();
+      digitalWrite(PinRelay, HIGH);
+    }
   }
   else if (millis() - PumpStartTime > PumpTime)
   {
