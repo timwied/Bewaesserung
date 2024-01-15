@@ -76,29 +76,6 @@ void startServer()
         request->send(200, "text/html", "<h1>Processed</h1>");
       });
 
-  // Json post handler
-  AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler(
-      "/data2", [](AsyncWebServerRequest *request, JsonVariant &json)
-      {
-        if (json["username"].is<String>()) {
-          String x = json["username"];
-          request->send(200, "text/html", "du heißt " + x);
-        } 
-        else {
-          // also respond with json
-          DynamicJsonDocument doc(1024);
-          
-          doc["sensor"] = "gps";
-          doc["time"] = 1351824120;
-          doc["data"][0] = 48.756080;
-          doc["data"][1] = 2.302038;
-
-          String x;
-          serializeJson(doc, x);
-          request->send(400, "application/json", x);
-        } });
-
-  server->addHandler(handler);
   server->begin();
 }
 
@@ -107,20 +84,6 @@ void setPins()
   pinMode(PinMoisture, INPUT);
   pinMode(PinWater, INPUT);
   pinMode(PinRelay, OUTPUT);
-}
-
-void pumpWater()
-{
-  if(ActivatePump){
-    Serial.printf("%d, %d, %d\n", millis(), PumpStartTime, Moisture);
-    digitalWrite(PinRelay, HIGH);
-    if(millis() - PumpStartTime > PumpTime)
-    {
-      ActivatePump = false;
-    }
-  }
-  else
-    digitalWrite(PinRelay, LOW);
 }
 
 void readWaterLevel()
@@ -135,10 +98,6 @@ void readWaterLevel()
 void readMoisture()
 {
   Moisture = analogRead(PinMoisture);
-  // if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime){
-  //   ActivatePump = true;
-  //   PumpStartTime = millis();
-  // }
 }
 
 //--------------------------------------------------------------------
@@ -158,7 +117,6 @@ void loop()
 {
   readWaterLevel();
   readMoisture();
-  //pumpWater();
 
   if (Moisture < 2000 && millis() - PumpStartTime > PumpBreakTime)
   {
@@ -171,7 +129,4 @@ void loop()
     digitalWrite(PinRelay, LOW);
     ActivatePump = false;
   }
-
-  // userInput()
-  //delay(2000);
 }
