@@ -95,9 +95,9 @@ void loop()
       PumpStartTime = millis();
       digitalWrite(PinRelay, HIGH);
     }
-  }
-  else if (millis() - PumpStartTime > PumpTime)
-  {
-    digitalWrite(PinRelay, LOW);
+    else if (millis() - PumpStartTime > PumpTime)
+    {
+      digitalWrite(PinRelay, LOW);
+    }
   }
 }
